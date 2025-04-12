@@ -70,6 +70,8 @@ const LayoutBase = props => {
         </>
       ) : null}
       {fullWidth ? null : <PostHeader {...props} isDarkMode={isDarkMode} />}
+      <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8011304434134882"
+     crossorigin="anonymous"></script>
     </header>
   )
 
