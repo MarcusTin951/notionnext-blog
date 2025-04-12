@@ -2,7 +2,7 @@ import { siteConfig } from '@/lib/config'
 
 /**
  * 网站版权日期
- * 示例： 2021-2024
+ * 示例： 2025
  * @returns
  */
 export default function CopyRightDate() {
