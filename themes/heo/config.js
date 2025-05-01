@@ -15,8 +15,8 @@ const CONFIG = {
   HEO_HERO_BODY_REVERSE: false,
 
   // 英雄区(首页顶部大卡)
-  HEO_HERO_TITLE_1: '分享编程',
-  HEO_HERO_TITLE_2: '与思维认知',
+  HEO_HERO_TITLE_1: '分享知识',
+  HEO_HERO_TITLE_2: '与科技应用',
   HEO_HERO_TITLE_3: 'marcusblog.zone.id',
   HEO_HERO_TITLE_4: '',
   HEO_HERO_TITLE_5: '欢迎来到我的博客',
@@ -37,12 +37,12 @@ const CONFIG = {
   // 右侧个人资料卡牌欢迎语，点击可自动切换
   HEO_INFOCARD_GREETINGS: [
     '你好！我是',
-    '🔍 分享与热心帮助',
-    '🤝 专修交互与设计',
-    '🏃 脚踏实地行动派',
-    '🏠 智能家居小能手',
-    '🤖️ 数码科技爱好者',
-    '🧱 团队小组发动机'
+    '普通人',
+    '分享科技',
+    '中学生',
+    '热爱科技编程',
+    '',
+    ''
   ],
 
   // 个人资料底部按钮
