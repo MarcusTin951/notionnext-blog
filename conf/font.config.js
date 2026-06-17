@@ -10,9 +10,9 @@ module.exports = {
   // 字体CSS 例如 https://npm.elemecdn.com/lxgw-wenkai-webfont@1.6.0/style.css
   FONT_URL: [
     // 'https://npm.elemecdn.com/lxgw-wenkai-webfont@1.6.0/style.css',
-    'https://fonts.googleapis.com/css?family=Bitter:300,400,700&display=swap',
     'https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap',
-    'https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;500;700&display=swap'
+    'https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;500;700&display=swap',
+    'https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC&display=swap'
   ],
 
   // 字体优化配置
@@ -22,6 +22,7 @@ module.exports = {
   // 无衬线字体 例如'"LXGW WenKai"'
   FONT_SANS: [
     // '"LXGW WenKai"',
+    '"LXGW WenKai TC"',
     '"PingFang SC"',
     '-apple-system',
     'BlinkMacSystemFont',
@@ -42,6 +43,7 @@ module.exports = {
   // 衬线字体 例如'"LXGW WenKai"'
   FONT_SERIF: [
     // '"LXGW WenKai"',
+    '"LXGW WenKai TC"'
     'Bitter',
     '"Noto Serif SC"',
     'SimSun',
