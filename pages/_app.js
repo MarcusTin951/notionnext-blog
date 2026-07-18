@@ -134,5 +134,3 @@ export default function App({ Component, pageProps }) {
 
   // 正常渲染你的博客内容
   return <Component {...pageProps} />
-}
-
