@@ -43,14 +43,10 @@ export default function BeautifulSignInPage() {
 
   return (
     <div style={styles.container}>
-      {/* 背景装饰光晕 */}
-      <div style={styles.glow1}></div>
-      <div style={styles.glow2}></div>
 
       {/* 登录卡片 */}
       <div style={styles.card}>
         <div style={styles.header}>
-          <div style={styles.logo}>🔒</div>
           <h2 style={styles.title}>ATin Story Login</h2>
           <p style={styles.subtitle}>请输入邮箱和密码以继续</p>
         </div>
@@ -99,10 +95,7 @@ export default function BeautifulSignInPage() {
             {loading ? '正在验证密钥...' : '验证并进入'}
           </button>
         </form>
-
-        <div style={styles.footer}>
-          Protected by Supabase Secure Guard
-        </div>
+            
       </div>
     </div>
   )
