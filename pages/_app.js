@@ -94,20 +94,25 @@ export default function App({ Component, pageProps }) {
   const router = useRouter()
   const [isAuthorized, setIsAuthorized] = useState(false)
 
-// ==================== 纯前端暴力拦截看门狗 ====================
-if (typeof window !== 'undefined') {
-  const isAuthPage = window.location.pathname.startsWith('/sign-in') || 
-                     window.location.pathname.startsWith('/sign-up') || 
-                     window.location.pathname.startsWith('/auth');
-                     
-  // 直接通过 LocalStorage 快速盲判，只要没有 supabase 登录标记且不在登录页，0毫秒瞬间闪现走
-  const hasSession = Object.keys(localStorage).some(key => key.includes('supabase.auth.token'));
-  
-  if (!hasSession && !isAuthPage) {
-    window.location.href = '/sign-in';
-  }
-}
-// =============================================================
+useEffect(() => {
+    // 1. 定义不需要拦截的白名单页面
+    const isAuthPage = 
+      router.pathname.startsWith('/sign-in') || 
+      router.pathname.startsWith('/sign-up') || 
+      router.pathname.startsWith('/auth')
+
+    // 2. 检查 Supabase 登录状态
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (!session && !isAuthPage) {
+        // 没登录，且不是登录页，强制前端闪现到登录
+        router.replace('/sign-in')
+      } else {
+        // 已登录，或者是登录页，放行
+        setIsAuthorized(true)
+      }
+    }
 
     checkUser()
 
