@@ -1,12 +1,11 @@
 // middleware.ts
-import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-export async function middleware(req: NextRequest) {
+export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
 
-  // 1. 绝对白名单：登录页、注册页、静态资源、API、第三方认证回调
+  // 1. 绝对放行的白名单
   const isAuthPage = 
     pathname.startsWith('/sign-in') || 
     pathname.startsWith('/sign-up') || 
@@ -15,67 +14,44 @@ export async function middleware(req: NextRequest) {
   const isPublicAsset = 
     pathname.startsWith('/_next') || 
     pathname.startsWith('/api') ||
-    pathname.includes('.') // 排除 favicon.ico, sitemap.xml 等带后缀的文件
+    pathname.includes('.')
 
-  // 如果访问的是白名单，或者是静态资源，直接放行，绝不阻拦
   if (isAuthPage || isPublicAsset) {
     return NextResponse.next()
   }
 
-  // 2. 初始化 Supabase 客户端并获取当前会话
-  let res = NextResponse.next({
-    request: {
-      headers: req.headers,
-    },
-  })
-
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return req.cookies.getAll()
-        },
-        setAll(cookiesToSet: any) {
-          try {
-            cookiesToSet.forEach(({ name, value }: any) => req.cookies.set(name, value))
-            res = NextResponse.next({
-              request: {
-                headers: req.headers,
-              },
-            })
-            cookiesToSet.forEach(({ name, value, options }: any) => res.cookies.set(name, value, options))
-          } catch (e) {
-            // 防止部分 Next.js 版本在 Edge 环境下因为 setCookie 报错导致中间件崩溃放行或死循环
-          }
-        },
-      },
-    }
+  // 2. 核心大招：直接去检查浏览器的 Cookies 列表中有没有包含 supabase 登录凭证的字段
+  // 标准的 Supabase SSR 登录成功后，会在 Cookie 中写入一个名包含 "sb-" 或 "supabase-auth" 的字段
+  const allCookies = req.cookies.getAll()
+  const hasSupabaseCookie = allCookies.some(cookie => 
+    cookie.name.includes('sb-') || 
+    cookie.name.includes('supabase') || 
+    cookie.name.includes('access-token')
   )
 
-  // 3. 安全获取 Session
-  // 用 getUser() 替代 getSession()，因为 getUser() 会向服务器严格验证 Cookie 的真实性
-  const { data: { user } } = await supabase.auth.getUser()
-
-  // 4. 拦截逻辑：如果没有获取到合法的用户，且当前不在登录页，强行跳转
-  if (!user) {
+  // 3. 如果没有任何 Supabase 相关的 Cookie 标记，说明绝对没登录，无条件强行弹走
+  if (!hasSupabaseCookie) {
     const url = req.nextUrl.clone()
     url.pathname = '/sign-in'
     
     const redirectRes = NextResponse.redirect(url)
-    // 强制清除缓存，防止浏览器记住了错误的重定向
-    redirectRes.headers.set('Cache-Control', 'no-store, max-age=0, must-revalidate')
+    // 强行给重定向增加禁止缓存的 Header，斩断静态首页的本地缓存
+    redirectRes.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate')
+    redirectRes.headers.set('Pragma', 'no-cache')
+    redirectRes.headers.set('Expires', '0')
     return redirectRes
   }
 
-  // 已登录，正常放行访问首页或文章页
-  return res
+  // 4. 有 Cookie 凭证，说明已经登录，顺畅放行进入网站
+  const response = NextResponse.next()
+  // 即使放行，也告诉浏览器不要缓存当前页面，防止后续登出时卡死
+  response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate')
+  return response
 }
 
 export const config = {
   matcher: [
-    // 拦截根路径以及所有深层子路径，但排除静态资源
+    // 强行拦截所有路径
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }
