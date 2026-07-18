@@ -62,5 +62,3 @@ export const config = {
     '/:path*'          // 拦截其他所有路径
   ],
 }
-
-export default authMiddleware
