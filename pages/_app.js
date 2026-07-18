@@ -94,7 +94,20 @@ export default function App({ Component, pageProps }) {
   const router = useRouter()
   const [isAuthorized, setIsAuthorized] = useState(false)
 
- App挂载DOM 入口文件
+// ==================== 纯前端暴力拦截看门狗 ====================
+if (typeof window !== 'undefined') {
+  const isAuthPage = window.location.pathname.startsWith('/sign-in') || 
+                     window.location.pathname.startsWith('/sign-up') || 
+                     window.location.pathname.startsWith('/auth');
+                     
+  // 直接通过 LocalStorage 快速盲判，只要没有 supabase 登录标记且不在登录页，0毫秒瞬间闪现走
+  const hasSession = Object.keys(localStorage).some(key => key.includes('supabase.auth.token'));
+  
+  if (!hasSession && !isAuthPage) {
+    window.location.href = '/sign-in';
+  }
+}
+// =============================================================
 
     checkUser()
 
