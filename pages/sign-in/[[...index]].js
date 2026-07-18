@@ -96,7 +96,6 @@ export default function CleanSignInPage() {
   )
 }
 
-// 💅 极致素雅、去掉多余修饰的样式
 const styles = {
   container: {
     width: '100vw',
@@ -104,17 +103,18 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    background: '#ffffff', // 干净纯白底
-    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    background: '#ffffff', 
+    // 👇 关键修改：直接继承网页的主体字体，同时兼容系统的无衬线字体栈
+    fontFamily: 'inherit, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
   },
   card: {
     width: '100%',
     maxWidth: '380px',
     padding: '40px 32px',
     background: '#ffffff',
-    border: '1px solid #e4e4e7', // 极细灰色边框，克制的高级感
+    border: '1px solid #e4e4e7', 
     borderRadius: '12px',
-    boxShadow: '0 4px 24px rgba(0, 0, 0, 0.03)', // 微弱的呼吸感阴影
+    boxShadow: '0 4px 24px rgba(0, 0, 0, 0.03)', 
   },
   header: {
     textAlign: 'center',
@@ -123,14 +123,16 @@ const styles = {
   title: {
     fontSize: '22px',
     fontWeight: '600',
-    color: '#09090b', // 偏深色文字
+    color: '#09090b', 
     margin: '0 0 6px 0',
     letterSpacing: '-0.5px',
+    fontFamily: 'inherit', // 继承主页标题字体
   },
   subtitle: {
     fontSize: '14px',
-    color: '#71717a', // 次要灰色文字
+    color: '#71717a', 
     margin: 0,
+    fontFamily: 'inherit',
   },
   form: {
     display: 'flex',
@@ -146,6 +148,7 @@ const styles = {
     fontSize: '13px',
     fontWeight: '500',
     color: '#27272a',
+    fontFamily: 'inherit',
   },
   input: {
     width: '100%',
@@ -157,6 +160,7 @@ const styles = {
     color: '#09090b',
     fontSize: '14px',
     outline: 'none',
+    fontFamily: 'inherit', // 确保输入框打字时的字体也一致
   },
   errorContainer: {
     background: '#fef2f2',
@@ -167,16 +171,18 @@ const styles = {
   errorText: {
     fontSize: '13px',
     color: '#dc2626',
+    fontFamily: 'inherit',
   },
   button: {
     width: '100%',
     padding: '12px',
-    background: '#09090b', // 纯黑按钮，形成强烈反差
+    background: '#09090b', 
     color: '#ffffff',
     border: 'none',
     borderRadius: '6px',
     fontSize: '14px',
     fontWeight: '500',
     marginTop: '6px',
+    fontFamily: 'inherit', // 按钮字体一致
   }
 }
