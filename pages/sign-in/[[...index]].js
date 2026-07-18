@@ -1,5 +1,4 @@
 import { createClient } from '@supabase/supabase-js'
-import { useRouter } from 'next/router'
 import { useState, useEffect } from 'react'
 
 const supabase = createClient(
@@ -8,7 +7,6 @@ const supabase = createClient(
 )
 
 export default function CleanSignInPage() {
-  const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [errorMsg, setErrorMsg] = useState('')
@@ -16,9 +14,9 @@ export default function CleanSignInPage() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) router.push('/')
+      if (session) window.location.href = '/'
     })
-  }, [router])
+  }, [])
 
   const handleLogin = async (e) => {
     e.preventDefault()
@@ -35,17 +33,17 @@ export default function CleanSignInPage() {
     if (error) {
       setErrorMsg('邮箱或密码不正确，请重新输入')
     } else if (data.session) {
-      router.push('/')
+      // 核心魔改：登录成功后不要用 router.push，用 location.href 强制打破一切静态缓存
+      window.location.href = '/'
     }
   }
 
   return (
     <div style={styles.container}>
-      {/* 登录卡片 */}
       <div style={styles.card}>
         <div style={styles.header}>
           <h2 style={styles.title}>Atin Story</h2>
-          <p style={styles.subtitle}>请输入邮箱和密码以继续访问</p>
+          <p style={styles.subtitle}>请输入邮箱和密码以继续</p>
         </div>
 
         <form onSubmit={handleLogin} style={styles.form}>
@@ -79,15 +77,7 @@ export default function CleanSignInPage() {
             </div>
           )}
 
-          <button 
-            type="submit" 
-            disabled={loading}
-            style={{
-              ...styles.button,
-              opacity: loading ? 0.7 : 1,
-              cursor: loading ? 'not-allowed' : 'pointer'
-            }}
-          >
+          <button type="submit" disabled={loading} style={styles.button}>
             {loading ? '正在验证...' : '验证并进入'}
           </button>
         </form>
@@ -97,86 +87,16 @@ export default function CleanSignInPage() {
 }
 
 const styles = {
-  container: {
-    // 👇 关键修改：直接继承网页的主体字体，同时兼容系统的无衬线字体栈
-    fontFamily: 'inherit, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-  },
-  card: {
-    width: '100%',
-    maxWidth: '380px',
-    padding: '40px 32px',
-    background: '#ffffff',
-    border: '1px solid #e4e4e7', 
-    borderRadius: '12px',
-    boxShadow: '0 4px 24px rgba(0, 0, 0, 0.03)', 
-  },
-  header: {
-    textAlign: 'center',
-    marginBottom: '32px',
-  },
-  title: {
-    fontSize: '22px',
-    fontWeight: '600',
-    color: '#09090b', 
-    margin: '0 0 6px 0',
-    letterSpacing: '-0.5px',
-    fontFamily: 'inherit', // 继承主页标题字体
-  },
-  subtitle: {
-    fontSize: '14px',
-    color: '#71717a', 
-    margin: 0,
-    fontFamily: 'inherit',
-  },
-  form: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '20px',
-  },
-  inputGroup: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '6px',
-  },
-  label: {
-    fontSize: '13px',
-    fontWeight: '500',
-    color: '#27272a',
-    fontFamily: 'inherit',
-  },
-  input: {
-    width: '100%',
-    padding: '10px 14px',
-    boxSizing: 'border-box',
-    background: '#fff',
-    border: '1px solid #d4d4d8',
-    borderRadius: '6px',
-    color: '#09090b',
-    fontSize: '14px',
-    outline: 'none',
-    fontFamily: 'inherit', // 确保输入框打字时的字体也一致
-  },
-  errorContainer: {
-    background: '#fef2f2',
-    border: '1px solid #fca5a5',
-    padding: '10px 12px',
-    borderRadius: '6px',
-  },
-  errorText: {
-    fontSize: '13px',
-    color: '#dc2626',
-    fontFamily: 'inherit',
-  },
-  button: {
-    width: '100%',
-    padding: '12px',
-    background: '#09090b', 
-    color: '#ffffff',
-    border: 'none',
-    borderRadius: '6px',
-    fontSize: '14px',
-    fontWeight: '500',
-    marginTop: '6px',
-    fontFamily: 'inherit', // 按钮字体一致
-  }
+  container: { display: 'flex', alignItems: 'center', justifyCentent: 'center', display: 'flex', justifyContent: 'center', alignItems: 'center',fontFamily: 'inherit, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', },
+  card: { width: '100%', maxWidth: '380px', padding: '40px 32px', background: '#ffffff', border: '1px solid #e4e4e7', borderRadius: '12px', boxShadow: '0 4px 24px rgba(0, 0, 0, 0.03)' },
+  header: { textAlign: 'center', marginBottom: '32px' },
+  title: { fontSize: '22px', fontWeight: '600', color: '#09090b', margin: '0 0 6px 0', letterSpacing: '-0.5px' },
+  subtitle: { fontSize: '14px', color: '#71717a', margin: 0 },
+  form: { display: 'flex', flexDirection: 'column', gap: '20px' },
+  inputGroup: { display: 'flex', flexDirection: 'column', gap: '6px' },
+  label: { fontSize: '13px', fontWeight: '500', color: '#27272a' },
+  input: { width: '100%', padding: '10px 14px', boxSizing: 'border-box', background: '#fff', border: '1px solid #d4d4d8', borderRadius: '6px', color: '#09090b', fontSize: '14px', outline: 'none' },
+  errorContainer: { background: '#fef2f2', border: '1px solid #fca5a5', padding: '10px 12px', borderRadius: '6px' },
+  errorText: { fontSize: '13px', color: '#dc2626' },
+  button: { width: '100%', padding: '12px', background: '#09090b', color: '#ffffff', border: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: '500', marginTop: '6px', cursor: 'pointer' }
 }
