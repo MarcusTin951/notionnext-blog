@@ -94,25 +94,7 @@ export default function App({ Component, pageProps }) {
   const router = useRouter()
   const [isAuthorized, setIsAuthorized] = useState(false)
 
-  useEffect(() => {
-    // 1. 定义不需要拦截的白名单页面
-    const isAuthPage = 
-      router.pathname.startsWith('/sign-in') || 
-      router.pathname.startsWith('/sign-up') || 
-      router.pathname.startsWith('/auth')
-
-    // 2. 检查 Supabase 登录状态
-    const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      
-      if (!session && !isAuthPage) {
-        // 没登录，且不是登录页，强制前端闪现到登录
-        router.replace('/sign-in')
-      } else {
-        // 已登录，或者是登录页，放行
-        setIsAuthorized(true)
-      }
-    }
+ App挂载DOM 入口文件
 
     checkUser()
 
