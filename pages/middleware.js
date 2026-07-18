@@ -34,8 +34,18 @@ export async function middleware(req) {
   // 2. 检查用户的登录状态（获取 session）
   const { data: { session } } = await supabase.auth.getSession()
 
-  // 3. 如果没有登录，且访问的不是登录页面，直接重定向到 /login
-  const isLoginPage = req.nextUrl.pathname.startsWith('/login')
+  // 检查当前访问的路径是否是认证相关的页面
+const isLoginPage = 
+  req.nextUrl.pathname.startsWith('/sign-in') || 
+  req.nextUrl.pathname.startsWith('/sign-up') || 
+  req.nextUrl.pathname.startsWith('/auth')
+
+// 如果没登录，且访问的不是登录/注册相关页面、也不是静态资源，就强行弹到登录页
+if (!session && !isLoginPage && !isPublicAsset) {
+  const url = req.nextUrl.clone()
+  url.pathname = '/sign-in'
+  return NextResponse.redirect(url)
+}
   // 如果你有其他公开页面（如 /about），也可以加在下面
   const isPublicAsset = req.nextUrl.pathname.startsWith('/_next') || req.nextUrl.pathname.startsWith('/api')
 
