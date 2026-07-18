@@ -44,8 +44,8 @@ export default function CleanSignInPage() {
       {/* 登录卡片 */}
       <div style={styles.card}>
         <div style={styles.header}>
-          <h2 style={styles.title}>私密空间</h2>
-          <p style={styles.subtitle}>请输入通行凭证以继续访问</p>
+          <h2 style={styles.title}>Atin Story</h2>
+          <p style={styles.subtitle}>请输入邮箱和密码以继续访问</p>
         </div>
 
         <form onSubmit={handleLogin} style={styles.form}>
@@ -57,7 +57,7 @@ export default function CleanSignInPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               style={styles.input}
-              placeholder="example@gmail.com"
+              placeholder="example@atin.qzz.io"
             />
           </div>
 
@@ -98,12 +98,6 @@ export default function CleanSignInPage() {
 
 const styles = {
   container: {
-    width: '100vw',
-    height: '100vh',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    background: '#ffffff', 
     // 👇 关键修改：直接继承网页的主体字体，同时兼容系统的无衬线字体栈
     fontFamily: 'inherit, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
   },
