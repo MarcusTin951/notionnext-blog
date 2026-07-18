@@ -18,14 +18,14 @@ export async function middleware(req: NextRequest) {
         getAll() {
           return req.cookies.getAll()
         },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => req.cookies.set(name, value))
+        setAll(cookiesToSet: any) {
+          cookiesToSet.forEach(({ name, value }: any) => req.cookies.set(name, value))
           res = NextResponse.next({
             request: {
               headers: req.headers,
             },
           })
-          cookiesToSet.forEach(({ name, value, options }) => res.cookies.set(name, value, options))
+          cookiesToSet.forEach(({ name, value, options }: any) => res.cookies.set(name, value, options))
         },
       },
     }
