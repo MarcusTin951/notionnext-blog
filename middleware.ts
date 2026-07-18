@@ -54,9 +54,12 @@ export async function middleware(req: NextRequest) {
   return res
 }
 
+// 强制让中间件拦截所有人、所有路径
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/',               // 拦截首页
+    '/article/:path*', // 拦截所有文章页（根据你博客的实际文章路径调整）
+    '/:path*'          // 拦截其他所有路径
   ],
 }
 
