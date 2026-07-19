@@ -97,6 +97,8 @@ const styles = {
     left: 0,
     zIndex: 99999, // 使用极高层级，把下面 NotionNext 自带的丑组件死死压在底下看不见
     display: 'flex', 
+    width: '100vw', 
+    height: '100vh',
     justifyContent: 'center', 
     alignItems: 'center' ,
     fontFamily: 'inherit, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
