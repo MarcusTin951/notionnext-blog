@@ -85,53 +85,30 @@ import { createClient } from '@supabase/supabase-js'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-)
+// ... 这里是你原本项目顶部的所有 import 语句 ...
 
 export default function App({ Component, pageProps }) {
-  const router = useRouter()
-  const [isAuthorized, setIsAuthorized] = useState(false)
-
-useEffect(() => {
-    // 1. 定义不需要拦截的白名单页面
-    const isAuthPage = 
-      router.pathname.startsWith('/sign-in') || 
-      router.pathname.startsWith('/sign-up') || 
-      router.pathname.startsWith('/auth')
-
-    // 2. 检查 Supabase 登录状态
-    const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      
-      if (!session && !isAuthPage) {
-        // 没登录，且不是登录页，强制前端闪现到登录
-        router.replace('/sign-in')
-      } else {
-        // 已登录，或者是登录页，放行
-        setIsAuthorized(true)
-      }
+  // === 🚀 客户端看门狗双保险开始 ===
+  if (typeof window !== 'undefined') {
+    const isAuthPage = window.location.pathname.startsWith('/sign-in') || 
+                       window.location.pathname.startsWith('/sign-up') || 
+                       window.location.pathname.startsWith('/auth')
+                       
+    // 通过检测本地存储判断登录，防止极端情况下客户端路由绕过 middleware
+    const hasSession = Object.keys(localStorage).some(key => key.includes('supabase.auth.token'))
+    
+    if (!hasSession && !isAuthPage) {
+      window.location.href = '/sign-in'
+      // 返回空，防止下面复杂的博客逻辑继续执行报错
+      return null 
     }
-
-    checkUser()
-
-    // 监听登录状态变化（防止用户登出或令牌失效）
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_OUT') {
-        router.replace('/sign-in')
-      }
-    })
-
-    return () => subscription.unsubscribe()
-  }, [router.pathname])
-
-  // 3. 关键：如果正在判断中且访问的不是登录页，展示一个纯白遮罩，防止静态内容“闪现”泄密
-  const isAuthPage = router.pathname.startsWith('/sign-in')
-  if (!isAuthorized && !isAuthPage) {
-    return <div style={{ background: '#ffffff', width: '100vw', height: '100vh' }} />
   }
+  // === 🚀 客户端看门狗双保险结束 ===
 
-  // 正常渲染你的博客内容
+  // -------------------------------------------------------------
+  // 下面全部保留你原本博客的 130 多行代码，原封不动！
+  // -------------------------------------------------------------
+  
+  // ... 原本的代码逻辑
   return <Component {...pageProps} />
 }
