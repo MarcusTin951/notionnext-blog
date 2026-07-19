@@ -36,18 +36,18 @@ const AppErrorBoundary = ErrorHandler.createErrorBoundary(
  * App挂载DOM 入口文件
  */
 const MyApp = ({ Component, pageProps }) => {
+  const route = useRouter()
+
   // === 🚀 客户端看门狗双保险开始 ===
   if (typeof window !== 'undefined') {
     const isAuthPage = window.location.pathname.startsWith('/sign-in') || 
                        window.location.pathname.startsWith('/sign-up') || 
                        window.location.pathname.startsWith('/auth')
                        
-    // 通过检测本地存储判断登录，防止极端情况下客户端路由绕过 middleware
     const hasSession = Object.keys(localStorage).some(key => key.includes('supabase.auth.token'))
     
     if (!hasSession && !isAuthPage) {
       window.location.href = '/sign-in'
-      // 返回空遮罩，阻止后面复杂的博客初始化渲染
       return <div style={{ background: '#ffffff', width: '100vw', height: '100vh' }} />
     }
   }
@@ -56,7 +56,6 @@ const MyApp = ({ Component, pageProps }) => {
   // 一些可能出现 bug 的样式，可以统一放入该钩子进行调整
   useAdjustStyle()
 
-  const route = useRouter()
   const queryTheme = getQueryParam(route.asPath, 'theme')
   const notionTheme = pageProps?.NOTION_CONFIG?.THEME
   const configTheme = BLOG.THEME
@@ -96,6 +95,23 @@ const MyApp = ({ Component, pageProps }) => {
     [theme]
   )
 
+  // 💡 【核心整合点】：判断当前是不是登录页面
+  const isSignInRoute = route.pathname.startsWith('/sign-in') || 
+                        route.pathname.startsWith('/sign-up') || 
+                        route.pathname.startsWith('/auth')
+
+  // 如果是登录页面，果断卸载 NotionNext 霸道的主题外壳 GLayout 和其他干扰插件，只裸投你的好看登录组件
+  if (isSignInRoute) {
+    return (
+      <AppErrorBoundary>
+        <div style={{ background: '#ffffff', minHeight: '100vh', width: '100vw' }}>
+          <Component {...pageProps} />
+        </div>
+      </AppErrorBoundary>
+    )
+  }
+
+  // 正常页面，继续保留原装全套主题布局
   return (
     <AppErrorBoundary>
       <GlobalContextProvider {...pageProps}>
