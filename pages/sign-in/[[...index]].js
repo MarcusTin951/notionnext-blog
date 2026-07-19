@@ -33,7 +33,6 @@ export default function CleanSignInPage() {
     if (error) {
       setErrorMsg('邮箱或密码不正确，请重新输入')
     } else if (data.session) {
-      // 核心魔改：登录成功后不要用 router.push，用 location.href 强制打破一切静态缓存
       window.location.href = '/'
     }
   }
@@ -43,7 +42,7 @@ export default function CleanSignInPage() {
       <div style={styles.card}>
         <div style={styles.header}>
           <h2 style={styles.title}>Atin Story</h2>
-          <p style={styles.subtitle}>请输入邮箱和密码以继续</p>
+          <p style={styles.subtitle}>请输入邮箱和密码以继续访问</p>
         </div>
 
         <form onSubmit={handleLogin} style={styles.form}>
@@ -86,8 +85,22 @@ export default function CleanSignInPage() {
   )
 }
 
+// 💡 【核心改进】：在组件上挂载一个特殊的标记，明确告诉 NotionNext 主题不要给这个页面加任何外层包裹和布局
+CleanSignInPage.getLayout = function getLayout(page) {
+  return page
+}
+
 const styles = {
-  container: { display: 'flex', alignItems: 'center', justifyCentent: 'center', display: 'flex', justifyContent: 'center', alignItems: 'center',fontFamily: 'inherit, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', },
+  container: { 
+    position: 'fixed', // 改为 fixed 强行钉死在屏幕最上层
+    top: 0,
+    left: 0,
+    zIndex: 99999, // 使用极高层级，把下面 NotionNext 自带的丑组件死死压在底下看不见
+    display: 'flex', 
+    justifyContent: 'center', 
+    alignItems: 'center' ,
+    fontFamily: 'inherit, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+  },
   card: { width: '100%', maxWidth: '380px', padding: '40px 32px', background: '#ffffff', border: '1px solid #e4e4e7', borderRadius: '12px', boxShadow: '0 4px 24px rgba(0, 0, 0, 0.03)' },
   header: { textAlign: 'center', marginBottom: '32px' },
   title: { fontSize: '22px', fontWeight: '600', color: '#09090b', margin: '0 0 6px 0', letterSpacing: '-0.5px' },
