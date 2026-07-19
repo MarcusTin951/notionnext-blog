@@ -1,27 +1,29 @@
-// pages/sitemap.xml.js
 import { fetchGlobalAllData } from '@/lib/db/SiteDataApi'
 import { useRouter } from 'next/router'
 import Slug from '../[prefix]'
 
 /**
-/**
- * @returns
+ * 获取全局数据用于页面渲染
  */
 export const getStaticProps = async () => {
-  const from = `auth`
+  const from = 'auth'
   const props = await fetchGlobalAllData({ from })
 
-  delete props.allPages
+  // 确保哪怕 Notion 里没配置相关数据，props 也不会是 undefined
+  if (props && props.allPages) {
+    delete props.allPages
+  }
+  
   return {
-    props
+    props: props || {},
+    // 强制设置重新验证时间，防止导出时因数据源为空被卡死
+    revalidate: 1 
   }
 }
 
 /**
- * 根据notion的slug访问页面
+ * 根据 notion 的 slug 访问页面
  * 解析二级目录 /article/about
- * @param {*} props
- * @returns
  */
 const UI = props => {
   const router = useRouter()
@@ -29,10 +31,3 @@ const UI = props => {
 }
 
 export default UI
-
-// 在 pages/auth/result.js 的最底部加上这段代码
-export async function getStaticProps() {
-  return {
-    props: {}, // 传一个空对象，明确告诉打包引擎这是一个可以通过编译的静态占位
-  }
-}
