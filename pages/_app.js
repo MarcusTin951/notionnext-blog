@@ -44,7 +44,8 @@ const MyApp = ({ Component, pageProps }) => {
                        window.location.pathname.startsWith('/sign-up') || 
                        window.location.pathname.startsWith('/auth')
                        
-    const hasSession = Object.keys(localStorage).some(key => key.includes('supabase.auth.token'))
+    // 💡【同步修正】：客户端也用 Cookie 来判断，确保和 middleware 步调完全一致
+    const hasSession = document.cookie.split(';').some(item => item.trim().startsWith('sb-'))
     
     if (!hasSession && !isAuthPage) {
       window.location.href = '/sign-in'
