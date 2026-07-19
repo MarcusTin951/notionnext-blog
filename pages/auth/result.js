@@ -29,3 +29,10 @@ const UI = props => {
 }
 
 export default UI
+
+// 在 pages/auth/result.js 的最底部加上这段代码
+export async function getStaticProps() {
+  return {
+    props: {}, // 传一个空对象，明确告诉打包引擎这是一个可以通过编译的静态占位
+  }
+}
