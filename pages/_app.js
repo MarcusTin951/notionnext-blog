@@ -44,7 +44,6 @@ const MyApp = ({ Component, pageProps }) => {
                        window.location.pathname.startsWith('/sign-up') || 
                        window.location.pathname.startsWith('/auth')
                        
-    // 💡【同步修正】：客户端也用 Cookie 来判断，确保和 middleware 步调完全一致
     const hasSession = document.cookie.split(';').some(item => item.trim().startsWith('sb-'))
     
     if (!hasSession && !isAuthPage) {
@@ -96,23 +95,26 @@ const MyApp = ({ Component, pageProps }) => {
     [theme]
   )
 
-  // 💡 【核心整合点】：判断当前是不是登录页面
+  // 判断当前是不是登录相关页面
   const isSignInRoute = route.pathname.startsWith('/sign-in') || 
                         route.pathname.startsWith('/sign-up') || 
                         route.pathname.startsWith('/auth')
 
-  // 如果是登录页面，果断卸载 NotionNext 霸道的主题外壳 GLayout 和其他干扰插件，只裸投你的好看登录组件
+  // 💡 【核心改进点】：如果是登录页面，同样要包上 GlobalContextProvider 和全局样式外壳
+  // 这样网站的特殊自定义字体、CSS 全局变量才能顺利往下渗透到手机端登录卡片上！
   if (isSignInRoute) {
     return (
       <AppErrorBoundary>
-        <div style={{ background: '#ffffff', minHeight: '100vh', width: '100vw' }}>
-          <Component {...pageProps} />
-        </div>
+        <GlobalContextProvider {...pageProps}>
+          <div className="w-screen min-h-screen bg-white text-black" style={{ fontFamily: 'var(--font-global), sans-serif' }}>
+            <Component {...pageProps} />
+          </div>
+        </GlobalContextProvider>
       </AppErrorBoundary>
     )
   }
 
-  // 正常页面，继续保留原装全套主题布局
+  // 正常文章页面，继续保留原装全套主题布局
   return (
     <AppErrorBoundary>
       <GlobalContextProvider {...pageProps}>
