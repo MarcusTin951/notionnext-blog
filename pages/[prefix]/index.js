@@ -51,7 +51,6 @@ const Slug = props => {
 
   // 下面保持你原文件的代码不动即可...
   const { siteInfo } = props
-  ...
 
   // 文章锁🔐
   const [lock, setLock] = useState(post?.password && post?.password !== '')
