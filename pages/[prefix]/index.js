@@ -150,4 +150,11 @@ export async function getStaticProps({ params: { prefix }, locale }) {
   }
 }
 
+import dynamic from 'next/dynamic'
+import { useRouter } from 'next/router'
+
+// 💡 动态引入组件并禁用 SSR，彻底避开 Next 静态编译限制
+const UserProfile = dynamic(() => import('@/components/UserProfile'), { ssr: false })
+const UserList = dynamic(() => import('@/components/UserList'), { ssr: false })
+
 export default Slug
