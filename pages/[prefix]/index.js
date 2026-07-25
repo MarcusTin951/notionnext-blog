@@ -152,10 +152,7 @@ export async function getStaticPaths() {
 }
 
 export async function getStaticProps({ params: { prefix }, locale }) {
-  const props = await resolvePostProps({
-    prefix,
-    locale,
-    const prefix = params?.prefix
+  const prefix = params?.prefix
   const isCustomPath = prefix === 'profile' || prefix === 'users'
 
   return {
@@ -163,6 +160,9 @@ export async function getStaticProps({ params: { prefix }, locale }) {
     revalidate: ...,
     // 💡 修改这里：如果是 customPath 就强制不报错，否则按原逻辑走
     notFound: isCustomPath ? false : (!props.post && !props.posts)
+  const props = await resolvePostProps({
+    prefix,
+    locale,
   })
 
   return {
