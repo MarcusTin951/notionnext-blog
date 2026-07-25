@@ -157,4 +157,24 @@ import { useRouter } from 'next/router'
 const UserProfile = dynamic(() => import('@/components/UserProfile'), { ssr: false })
 const UserList = dynamic(() => import('@/components/UserList'), { ssr: false })
 
+// 找到渲染主体（通常叫 const UI 或 export default Component）
+const UI = props => {
+  const router = useRouter()
+  // 提取纯净路径，规避 URL 尾部斜杠和 Query 参数的影响
+  const cleanPath = router.asPath ? router.asPath.split('?')[0].replace(/\/$/, '') : ''
+
+  // 🌟 拦截 1：如果访问的是 /profile，直接展示个人中心
+  if (cleanPath.endsWith('/profile')) {
+    return <UserProfile />
+  }
+
+  // 🌟 拦截 2：如果访问的是 /users，直接展示成员列表
+  if (cleanPath.endsWith('/users')) {
+    return <UserList />
+  }
+
+  // 默认：继续渲染 NotionNext 原有的组件逻辑
+  return <Layout {...props} /> 
+}
+
 export default Slug
