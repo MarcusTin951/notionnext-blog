@@ -22,13 +22,18 @@ export default function UserList() {
   return (
     /* 💡 使用 fontFamily: 'inherit' 让文字和标题完全跟随 NotionNext 全局设置 */
     <div style={{ maxWidth: '800px', margin: '40px auto', padding: '20px', fontFamily: 'inherit' }}>
-      {/* 隐藏 Notion 原生的 Header / 字数 / 阅读时间 */}
+     {/* 💡 只隐藏文章自身的 Header / 封面 / 字数阅读量，保留网站顶部的导航栏 */}
       <style jsx global>{`
-        header, .post-header, .header-byline, #header-cover, .font-light.text-sm {
+        /* 隐藏文章顶部的 Meta 区域，但保留全局 Header 导航栏 */
+        .post-header, 
+        .header-byline, 
+        #header-cover, 
+        article > header, 
+        main article header,
+        .font-light.text-sm.flex {
           display: none !important;
         }
       `}</style>
-
       <h1 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '20px', fontFamily: 'inherit' }}>网站成员列表</h1>
       {loading ? (
         <p style={{ fontFamily: 'inherit' }}>加载中...</p>
