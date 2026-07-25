@@ -20,7 +20,7 @@ import { getStaticPathsBase } from '@/lib/build/staticPaths'
 import { isExport } from '@/lib/utils/buildMode'
 import dynamic from 'next/dynamic'
 
-// 💡 动态导入自定义 Supabase 组件
+// 💡 动态引入自定义 Supabase 组件，禁用 SSR 以避免 Next.js 静态编译报错
 const UserProfile = dynamic(() => import('@/components/UserProfile'), { ssr: false })
 const UserList = dynamic(() => import('@/components/UserList'), { ssr: false })
 
@@ -33,24 +33,24 @@ const isStaticExport = process.env.EXPORT === 'true'
  * @returns
  */
 const Slug = props => {
-  const { post } = props
-  const router = useRouter()
-  const { locale } = useGlobal()
-  const Prefix = (props) => {
   const router = useRouter()
 
-  // 🌟【插入这一段拦截代码】🌟
+  // 🌟 核心拦截 1：提取纯净 URL 路径（排除 query 参数和末尾斜杠）
   const cleanPath = router.asPath ? router.asPath.split('?')[0].replace(/\/$/, '') : ''
+
+  // 🌟 核心拦截 2：访问 /profile 路径时，渲染“个人中心”组件
   if (cleanPath.endsWith('/profile')) {
     return <UserProfile />
   }
+
+  // 🌟 核心拦截 3：访问 /users 路径时，渲染“用户列表”组件
   if (cleanPath.endsWith('/users')) {
     return <UserList />
   }
-  // 🌟【插入结束】🌟
 
-  // 下面保持你原文件的代码不动即可...
-  const { siteInfo } = props
+  // 👇 以下保持 NotionNext 原有的 Slug 文章加载/加密逻辑
+  const { post } = props
+  const { locale } = useGlobal()
 
   // 文章锁🔐
   const [lock, setLock] = useState(post?.password && post?.password !== '')
@@ -152,18 +152,13 @@ export async function getStaticPaths() {
 }
 
 export async function getStaticProps({ params: { prefix }, locale }) {
-  const prefix = params?.prefix
-  const isCustomPath = prefix === 'profile' || prefix === 'users'
-
-  return {
-    props,
-    revalidate: ...,
-    // 💡 修改这里：如果是 customPath 就强制不报错，否则按原逻辑走
-    notFound: isCustomPath ? false : (!props.post && !props.posts)
   const props = await resolvePostProps({
     prefix,
     locale,
   })
+
+  // 💡 如果请求的路径是自定义路径，阻止其返回 404
+  const isCustomPath = prefix === 'profile' || prefix === 'users'
 
   return {
     props,
@@ -174,7 +169,7 @@ export async function getStaticProps({ params: { prefix }, locale }) {
         BLOG.NEXT_REVALIDATE_SECOND,
         props.NOTION_CONFIG
       ),
-    notFound: !props.post
+    notFound: isCustomPath ? false : !props.post
   }
 }
 
