@@ -1,77 +1,182 @@
 import BLOG from '@/blog.config'
+import useNotification from '@/components/Notification'
+import TechGrow from '@/components/TechGrow'
 import { siteConfig } from '@/lib/config'
-import { getGlobalData, getPost } from '@/lib/db/getSiteData'
-import LayoutBase from '@/themes/BLOG_THEME' // 自动加载当前启用的主题
-import { dynamicImport } from '@/themes/theme'
-import dynamic from 'next/dynamic'
+import { resolvePostProps } from '@/lib/db/SiteDataApi'
+import { useGlobal } from '@/lib/global'
+import { getPageTableOfContents } from '@/lib/db/notion/getPageTableOfContents'
+import {
+  getPasswordQuery,
+  getPasswordStoragePath,
+  sha256Digest
+} from '@/lib/utils/password'
+import { checkSlugHasNoSlash } from '@/lib/utils/post'
+import { DynamicLayout } from '@/themes/theme'
+import md5 from 'js-md5'
 import { useRouter } from 'next/router'
+import PropTypes from 'prop-types'
+import { useEffect, useState } from 'react'
+import { getStaticPathsBase } from '@/lib/build/staticPaths'
+import { isExport } from '@/lib/utils/buildMode'
+import dynamic from 'next/dynamic'
 
-// 💡 动态引入自定义 Supabase 组件，关闭 SSR 以避免静态构建报错
+// 💡 动态导入自定义 Supabase 组件
 const UserProfile = dynamic(() => import('@/components/UserProfile'), { ssr: false })
 const UserList = dynamic(() => import('@/components/UserList'), { ssr: false })
 
+const isStaticExport = process.env.EXPORT === 'true'
+
 /**
- * 对应 [prefix] 路由页面
+ * 根据notion的slug访问页面
+ * 只解析一级目录例如 /about
+ * @param {*} props
+ * @returns
  */
-const Prefix = props => {
+const Slug = props => {
+  const { post } = props
+  const router = useRouter()
+  const { locale } = useGlobal()
+  const Prefix = (props) => {
   const router = useRouter()
 
-  // 1. 提取纯净路径（移除 query 参数和末尾斜杠）
+  // 🌟【插入这一段拦截代码】🌟
   const cleanPath = router.asPath ? router.asPath.split('?')[0].replace(/\/$/, '') : ''
-
-  // 🌟 2. 路由拦截：如果是 /profile 路径，渲染个人中心
   if (cleanPath.endsWith('/profile')) {
     return <UserProfile />
   }
-
-  // 🌟 3. 路由拦截：如果是 /users 路径，渲染用户列表
   if (cleanPath.endsWith('/users')) {
     return <UserList />
   }
+  // 🌟【插入结束】🌟
 
-  // 4. 默认逻辑：正常渲染 NotionNext 原有主题页面
-  const { siteInfo, categoryOptions, tagOptions } = props
-  const theme = siteConfig('THEME', BLOG.THEME, props.NOTION_CONFIG)
-  const Layout = dynamicImport(theme, props.post?.type || 'LayoutSlug')
+  // 下面保持你原文件的代码不动即可...
+  const { siteInfo } = props
+  ...
 
-  const meta = {
-    title: `${props.post?.title} | ${siteInfo?.title}`,
-    description: props.post?.summary,
-    type: 'article',
-    slug: props.post?.slug
+  // 文章锁🔐
+  const [lock, setLock] = useState(post?.password && post?.password !== '')
+  const { showNotification, Notification } = useNotification()
+
+  /**
+   * 验证文章密码
+   * @param {*} passInput
+   */
+  const validPassword = passInput => {
+    if (!post) {
+      return false
+    }
+    const legacy = md5(String(post?.slug ?? '') + passInput)
+    const nextHash = sha256Digest(passInput)
+    if (nextHash === post?.password || legacy === post?.password) {
+      setLock(false)
+      // 输入密码存入 localStorage；键仅含 pathname，避免 query/hash 导致读写不一致（PR #3389）
+      localStorage.setItem(
+        'password_' + getPasswordStoragePath(router.asPath),
+        passInput
+      )
+      showNotification(locale.COMMON.ARTICLE_UNLOCK_TIPS) // 设置解锁成功提示显示
+      return true
+    }
+    return false
   }
 
+  // 文章加载
+  useEffect(() => {
+    // 文章加密
+    if (post?.password && post?.password !== '') {
+      setLock(true)
+    } else {
+      setLock(false)
+    }
+
+    // 读取上次记录 自动提交密码
+    const passInputs = getPasswordQuery(router.asPath)
+    if (passInputs.length > 0) {
+      for (const passInput of passInputs) {
+        if (validPassword(passInput)) {
+          break // 密码验证成功，停止尝试
+        }
+      }
+    }
+    // validPassword 内部依赖 post / router 同时也已在依赖里
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [post, router.asPath])
+
+  // 文章加载
+  useEffect(() => {
+    if (lock) {
+      return
+    }
+    // 文章解锁后生成目录与内容
+    if (post?.blockMap?.block) {
+      post.content = Object.keys(post.blockMap.block).filter(
+        key => post.blockMap.block[key]?.value?.parent_id === post.id
+      )
+      post.toc = getPageTableOfContents(post, post.blockMap)
+    }
+  }, [router, lock, post])
+
+  props = { ...props, lock, validPassword }
+  const theme = siteConfig('THEME', BLOG.THEME, props.NOTION_CONFIG)
   return (
-    <LayoutBase {...props} meta={meta}>
-      <Layout {...props} />
-    </LayoutBase>
+    <>
+      {/* 文章布局 */}
+      <DynamicLayout theme={theme} layoutName='LayoutSlug' {...props} />
+      {/* 解锁密码提示框 */}
+      {post?.password && post?.password !== '' && !lock && <Notification />}
+      {/* 导流工具 */}
+      <TechGrow lock={lock} />
+    </>
   )
 }
 
-export async function getStaticProps({ params }) {
-  const prefix = params.prefix
-  const from = 'prefix-index'
-  const props = await getGlobalData({ from })
+Slug.propTypes = {
+  post: PropTypes.shape({
+    id: PropTypes.string,
+    slug: PropTypes.string,
+    password: PropTypes.string,
+    content: PropTypes.array,
+    toc: PropTypes.array,
+    blockMap: PropTypes.shape({
+      block: PropTypes.object
+    })
+  }),
+  NOTION_CONFIG: PropTypes.object
+}
 
-  // 查找对应 prefix/slug 的文章或页面
-  props.post = props.allPages?.find(p => p.slug === prefix)
+export async function getStaticPaths() {
+  return getStaticPathsBase({
+    from: 'slug-paths',
+    filterFn: row => checkSlugHasNoSlash(row),
+    mapPageToParams: row => ({ params: { prefix: row.slug } })
+  })
+}
 
-  // 💡 如果是 profile 或 users 这种纯自定义组件路径，无需让 Notion 校验 404
+export async function getStaticProps({ params: { prefix }, locale }) {
+  const props = await resolvePostProps({
+    prefix,
+    locale,
+    const prefix = params?.prefix
   const isCustomPath = prefix === 'profile' || prefix === 'users'
 
   return {
     props,
-    revalidate: siteConfig('NEXT_REVALIDATE_SECOND', BLOG.NEXT_REVALIDATE_SECOND, props.NOTION_CONFIG),
-    notFound: isCustomPath ? false : !props.post
-  }
-}
+    revalidate: ...,
+    // 💡 修改这里：如果是 customPath 就强制不报错，否则按原逻辑走
+    notFound: isCustomPath ? false : (!props.post && !props.posts)
+  })
 
-export async function getStaticPaths() {
-  // 生成预渲染路径，这里默认为空，交由 ISR 增量生成
   return {
-    paths: [],
-    fallback: 'blocking'
+    props,
+    revalidate: isStaticExport
+      ? undefined
+      : siteConfig(
+        'NEXT_REVALIDATE_SECOND',
+        BLOG.NEXT_REVALIDATE_SECOND,
+        props.NOTION_CONFIG
+      ),
+    notFound: !props.post
   }
 }
 
-export default Prefix
+export default Slug
