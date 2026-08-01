@@ -1,52 +1,71 @@
 // middleware.js
 import { NextResponse } from 'next/server'
+import { createServerClient } from '@supabase/ssr'
 
-export function middleware(req) {
+export async function middleware(req) {
+  let res = NextResponse.next({
+    request: {
+      headers: req.headers,
+    },
+  })
+
   const { pathname } = req.nextUrl
 
-  // 1. 绝对放行的白名单
-  const isAuthPage = 
-    pathname.startsWith('/sign-in') || 
-    pathname.startsWith('/sign-up') || 
-    pathname.startsWith('/auth')
-
-  const isPublicAsset = 
-    pathname.startsWith('/_next') || 
+  // 1. 放行静态资源与登录/注册页面
+  if (
+    pathname.startsWith('/sign-in') ||
+    pathname.startsWith('/sign-up') ||
+    pathname.startsWith('/auth') ||
+    pathname.startsWith('/_next') ||
     pathname.startsWith('/api') ||
     pathname.includes('.')
-
-  if (isAuthPage || isPublicAsset) {
-    return NextResponse.next()
+  ) {
+    return res
   }
 
-  // 2. 更加宽泛且安全的 Cookie 检查机制
-  const allCookies = req.cookies.getAll()
-  
-  // 检查是否有任意符合 Supabase Token 规范的 Cookie
-  const hasSupabaseCookie = allCookies.some(cookie => 
-    cookie.name.startsWith('sb-') || 
-    cookie.name.includes('supabase') || 
-    cookie.name.includes('auth-token') ||
-    cookie.name.includes('access-token')
+  // 2. 初始化 Supabase Server 客户端
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    {
+      cookies: {
+        getAll() {
+          return req.cookies.getAll()
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            req.cookies.set(name, value)
+            res = NextResponse.next({
+              request: {
+                headers: req.headers,
+              },
+            })
+            res.cookies.set(name, value, {
+              ...options,
+              maxAge: 30 * 24 * 60 * 60, // 30天
+              path: '/'
+            })
+          })
+        },
+      },
+    }
   )
 
-  // 3. 如果没有任何凭证，重定向到登录页
-  if (!hasSupabaseCookie) {
-    const url = req.nextUrl.clone()
-    url.pathname = '/sign-in'
-    
-    const redirectRes = NextResponse.redirect(url)
-    redirectRes.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate')
-    return redirectRes
+  // 3. 获取并校验 Session
+  const { data: { session } } = await supabase.auth.getSession()
+
+  // 4. 未登录/ Session 失效，重定向回登录页
+  if (!session) {
+    const redirectUrl = req.nextUrl.clone()
+    redirectUrl.pathname = '/sign-in'
+    return NextResponse.redirect(redirectUrl)
   }
 
-  // 4. 有 Cookie 凭证，顺利放行进入网站
-  return NextResponse.next()
+  return res
 }
 
 export const config = {
   matcher: [
-    // 拦截除了静态资源和 API 外的所有路由
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }
