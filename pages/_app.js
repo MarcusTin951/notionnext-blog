@@ -1,4 +1,4 @@
-// import '@/styles/animate.css' // @see https://animate.style/
+// _app.js
 import '@/styles/globals.css'
 import '@/styles/utility-patterns.css'
 
@@ -38,20 +38,7 @@ const AppErrorBoundary = ErrorHandler.createErrorBoundary(
 const MyApp = ({ Component, pageProps }) => {
   const route = useRouter()
 
-  // === 🚀 客户端看门狗双保险开始 ===
-  if (typeof window !== 'undefined') {
-    const isAuthPage = window.location.pathname.startsWith('/sign-in') || 
-                       window.location.pathname.startsWith('/sign-up') || 
-                       window.location.pathname.startsWith('/auth')
-                       
-    const hasSession = document.cookie.split(';').some(item => item.trim().startsWith('sb-'))
-    
-    if (!hasSession && !isAuthPage) {
-      window.location.href = '/sign-in'
-      return <div style={{ background: '#ffffff', width: '100vw', height: '100vh' }} />
-    }
-  }
-  // === 🚀 客户端看门狗双保险结束 ===
+  // ❌ 已删除：原本这里的“客户端看门狗双保险”，它会导致 document.cookie 读不到 Supabase Session 时无限循环跳转 sign-in
 
   // 一些可能出现 bug 的样式，可以统一放入该钩子进行调整
   useAdjustStyle()
@@ -100,8 +87,7 @@ const MyApp = ({ Component, pageProps }) => {
                         route.pathname.startsWith('/sign-up') || 
                         route.pathname.startsWith('/auth')
 
-  // 💡 【核心改进点】：如果是登录页面，同样要包上 GlobalContextProvider 和全局样式外壳
-  // 这样网站的特殊自定义字体、CSS 全局变量才能顺利往下渗透到手机端登录卡片上！
+  // 如果是登录页面，同样要包上 GlobalContextProvider 和全局样式外壳
   if (isSignInRoute) {
     return (
       <AppErrorBoundary>
