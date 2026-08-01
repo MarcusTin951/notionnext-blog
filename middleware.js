@@ -1,17 +1,10 @@
 // middleware.js
 import { NextResponse } from 'next/server'
-import { createServerClient } from '@supabase/ssr'
 
-export async function middleware(req) {
-  let res = NextResponse.next({
-    request: {
-      headers: req.headers,
-    },
-  })
-
+export function middleware(req) {
   const { pathname } = req.nextUrl
 
-  // 1. 放行静态资源与登录/注册页面
+  // 白名单页面直接放行
   if (
     pathname.startsWith('/sign-in') ||
     pathname.startsWith('/sign-up') ||
@@ -20,46 +13,25 @@ export async function middleware(req) {
     pathname.startsWith('/api') ||
     pathname.includes('.')
   ) {
-    return res
+    return NextResponse.next()
   }
 
-  // 2. 初始化 Supabase Server 客户端
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    {
-      cookies: {
-        getAll() {
-          return req.cookies.getAll()
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            req.cookies.set(name, value)
-            res = NextResponse.next({
-              request: {
-                headers: req.headers,
-              },
-            })
-            res.cookies.set(name, value, {
-              ...options,
-              maxAge: 30 * 24 * 60 * 60, // 30天
-              path: '/'
-            })
-          })
-        },
-      },
-    }
-  )
+  const deviceToken = req.cookies.get('sb-device-token')?.value
+  const accessToken = req.cookies.get('sb-access-token')?.value
 
-  // 3. 获取并校验 Session
-  const { data: { session } } = await supabase.auth.getSession()
-
-  // 4. 未登录/ Session 失效，重定向回登录页
-  if (!session) {
-    const redirectUrl = req.nextUrl.clone()
-    redirectUrl.pathname = '/sign-in'
-    return NextResponse.redirect(redirectUrl)
+  // 如果没有凭证，踢回登录页
+  if (!deviceToken || !accessToken) {
+    const url = req.nextUrl.clone()
+    url.pathname = '/sign-in'
+    return NextResponse.redirect(url)
   }
+
+  // 🌟【关键提升】：如果有凭证，顺手延长 Cookie 寿命为 10 年，实现无限续期
+  const res = NextResponse.next()
+  const TEN_YEARS = 315360000
+
+  res.cookies.set('sb-access-token', accessToken, { path: '/', maxAge: TEN_YEARS, sameSite: 'lax' })
+  res.cookies.set('sb-device-token', deviceToken, { path: '/', maxAge: TEN_YEARS, sameSite: 'lax' })
 
   return res
 }
