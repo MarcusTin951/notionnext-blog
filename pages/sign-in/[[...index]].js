@@ -13,14 +13,26 @@ export default function CleanSignInPage() {
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    // 捕获可能从其他地方传过来的错误提示
+    // 1. 捕获被其他设备挤下线的提示
     const urlParams = new URLSearchParams(window.location.search)
     if (urlParams.get('error') === 'device_conflict') {
-      setErrorMsg('⛔ 该账号正由另一台设备使用中，请等待其退出后再试。')
+      setErrorMsg('⚠️ 您的账号已在其他设备登录，您已被强制下线。')
     }
 
+    // 2. 静默检测：如果已有 Session 且本地设备锁还在，直接静默跳转首页
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) window.location.href = '/'
+      if (session) {
+        const localCookies = document.cookie.split('; ').reduce((acc, item) => {
+          const [k, v] = item.split('=')
+          if (k) acc[k.trim()] = v
+          return acc
+        }, {})
+        
+        // 只要本地有设备 Token 标记，直接进入系统
+        if (localCookies['sb-device-token']) {
+          window.location.href = '/'
+        }
+      }
     })
   }, [])
 
@@ -29,7 +41,7 @@ export default function CleanSignInPage() {
     setLoading(true)
     setErrorMsg('')
 
-    // 🌟 1. 先去验证账号密码是否正确
+    // 🌟 1. 验证账号密码
     const { data, error } = await supabase.auth.signInWithPassword({
       email: email.trim().toLowerCase(),
       password: password,
@@ -46,33 +58,10 @@ export default function CleanSignInPage() {
       const accessToken = data.session.access_token
 
       try {
-        // 🌟 2. 检查 Supabase 数据库中该账号当前是否已被其他设备锁定
-        const { data: sessionData } = await supabase
-          .from('user_device_sessions')
-          .select('active_token')
-          .eq('user_id', userId)
-          .maybeSingle()
+        // 🌟 2. 生成一个唯一的设备标识 Token
+        const newDeviceToken = 'dev_' + Math.random().toString(36).substring(2, 9) + '_' + Date.now()
 
-        // 解析本地浏览器当前可能存在的设备锁 Token
-        const localCookies = document.cookie.split('; ').reduce((acc, item) => {
-          const [k, v] = item.split('=')
-          if (k) acc[k.trim()] = v
-          return acc
-        }, {})
-        const myLocalDeviceToken = localCookies['sb-device-token']
-
-        // 🌟 3. 如果数据库有锁，且锁定的并不是我当前的浏览器设备 -> 强行拦截并退出登录态
-        if (sessionData && sessionData.active_token && sessionData.active_token !== myLocalDeviceToken) {
-          await supabase.auth.signOut()
-          setErrorMsg('⛔ 该账号正由另一台设备使用中，请等待其退出后再试。')
-          setLoading(false)
-          return
-        }
-
-        // 🌟 4. 如果没人占坑（或是这台设备重复登录），则顺利续坑/占坑
-        const newDeviceToken = myLocalDeviceToken || 'dev_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now()
-
-        // 写入锁表，对外锁死该设备
+        // 🌟 3. 覆盖数据库中的活跃设备标识（抢占式占坑）
         const { error: upsertError } = await supabase
           .from('user_device_sessions')
           .upsert({ 
@@ -83,14 +72,17 @@ export default function CleanSignInPage() {
 
         if (upsertError) throw upsertError
 
-        // 🌟 5. 统一写入 Cookie 凭证，放行进入首页
-        document.cookie = `sb-access-token=${accessToken}; path=/; max-age=604800; SameSite=Lax; Secure`
-        document.cookie = `sb-device-token=${newDeviceToken}; path=/; max-age=604800; SameSite=Lax; Secure`
+        // 🌟 4. 【关键设置】：将 Cookie 过期时间设置为 10 年（永久登录体验）
+        // 315,360,000 秒 = 10 年
+        const TEN_YEARS = 315360000 
+        document.cookie = `sb-access-token=${accessToken}; path=/; max-age=${TEN_YEARS}; SameSite=Lax`
+        document.cookie = `sb-device-token=${newDeviceToken}; path=/; max-age=${TEN_YEARS}; SameSite=Lax`
 
+        // 🌟 5. 进入首页
         window.location.href = '/'
       } catch (err) {
-        console.error('设备状态锁验证失败:', err)
-        setErrorMsg('系统开小差了，请重试')
+        console.error('设备锁更新失败:', err)
+        setErrorMsg('登录失败，请稍后重试')
         setLoading(false)
       }
     }
@@ -101,7 +93,7 @@ export default function CleanSignInPage() {
       <div style={styles.card}>
         <div style={styles.header}>
           <h2 style={styles.title}>Atin Story</h2>
-          <p style={styles.subtitle}>请输入邮箱和密码证以继续访问</p>
+          <p style={styles.subtitle}>请输入邮箱和密码以继续访问</p>
         </div>
 
         <form onSubmit={handleLogin} style={styles.form}>
