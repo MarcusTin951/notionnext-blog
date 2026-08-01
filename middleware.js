@@ -19,22 +19,23 @@ export function middleware(req) {
     return NextResponse.next()
   }
 
-  // 2. 核心大招：直接去检查浏览器的 Cookies 列表中有没有包含 supabase 登录凭证的字段
-  // 只要登录成功，Supabase 在浏览器 Cookie 中一定会留下包含 sb- 或 supabase 等字样的凭证
+  // 2. 更加宽泛且安全的 Cookie 检查机制
   const allCookies = req.cookies.getAll()
+  
+  // 检查是否有任意符合 Supabase Token 规范的 Cookie
   const hasSupabaseCookie = allCookies.some(cookie => 
-    cookie.name.includes('sb-') || 
+    cookie.name.startsWith('sb-') || 
     cookie.name.includes('supabase') || 
+    cookie.name.includes('auth-token') ||
     cookie.name.includes('access-token')
   )
 
-  // 3. 如果没有任何凭证，说明绝对没登录，无条件强行重定向到登录页
+  // 3. 如果没有任何凭证，重定向到登录页
   if (!hasSupabaseCookie) {
     const url = req.nextUrl.clone()
     url.pathname = '/sign-in'
     
     const redirectRes = NextResponse.redirect(url)
-    // 强行增加禁止缓存的 Header，防止静态首页被浏览器缓存绕过中间件
     redirectRes.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate')
     return redirectRes
   }
@@ -45,7 +46,7 @@ export function middleware(req) {
 
 export const config = {
   matcher: [
-    // 强行拦截除静态资源外的所有路径
+    // 拦截除了静态资源和 API 外的所有路由
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }
